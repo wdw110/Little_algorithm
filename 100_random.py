@@ -10,10 +10,12 @@ def random100(arr):
 	for i in range(length):
 		num = randint(1,length)
 		tmp = res[i]
-		res[i] = num
+		res[i] = res[num-1]
 		res[num-1] = tmp
 	return res
-for i in range(6):
-	print random100(start_list)
 
+#test random100	
+for i in range(6):
+	a=random100(start_list)
+	print a
 
