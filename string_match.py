@@ -4,16 +4,17 @@
 #比如：abcda和adabc,由于出现的字符个数都是相同，只是顺序不同，所以这两个字符串是匹配的。要求高效。
 
 #思路：假定字符串中都是ASCII字符。用一个数组来计数，前者加，后者减，全部为0则匹配。
+import numpy as np
 
 def str_match(s1,s2):
-	obj = dict([(i,0) for i in range(256)]) #构造初始化数组
+	obj =  np.zeros(256) #构造初始化数组
 
 	if len(s1) == len(s2):
 		for i in range(len(s1)):
 			a1 = ord(s1[i]); a2 = ord(s2[i])
 			obj[a1] += 1
 			obj[a2] -= 1
-		for value in obj.values():
+		for value in obj:
 			if value != 0:
 				return '两个字符串不匹配'
 
