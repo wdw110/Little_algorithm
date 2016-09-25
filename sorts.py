@@ -60,8 +60,12 @@ def Select_two_sort(arr):
 		for j in range(i+1,n-i):
 			if tmp[max_t] < tmp[j]: max_t = j; continue
 			if tmp[min_t] > tmp[j]: min_t = j
-		tmp[i],tmp[min_t] = tmp[min_t],tmp[i]
-		tmp[n-i-1],tmp[max_t] = tmp[max_t],tmp[n-i-1]
+		if max_t==i:
+			tmp[n-i-1],tmp[max_t] = tmp[max_t],tmp[n-i-1]
+			tmp[i],tmp[min_t] = tmp[min_t],tmp[i]
+		else:
+			tmp[i],tmp[min_t] = tmp[min_t],tmp[i]
+			tmp[n-i-1],tmp[max_t] = tmp[max_t],tmp[n-i-1]
 	return tmp
 
 def Bubble_sort(arr):
@@ -77,7 +81,37 @@ def Bubble_sort(arr):
 				tmp[j+1],tmp[j] = tmp[j],tmp[j+1]
 	return tmp
 
-def 
+def adjust_heap(arr, i, length):
+	tmp = arr[i]
+	child = 2*i+1
+	while child < length:
+		if child+1<length and arr[child]<arr[child+1]:
+			child += 1
+		if arr[i] < arr[child]:
+			arr[i] = arr[child]
+			i = child
+			child = 2*i+1
+		else: break
+		arr[i] = tmp
+
+def build_heap(arr, length):
+#建立堆这种数据结构
+	for i in range(0,length/2)[::-1]:
+		adjust_heap(arr,i,length)
+
+
+def Heap_sort(arr):
+#基本思路：一种树形选择排序，是对直接选择排序的有效改进。利用堆这种数据结构所设计的一种排序算法。堆积是一个近似
+#完全二叉树的结构，并同时满足堆积的性质：即子结点的键值或索引总是小于（或者大于）它的父节点。
+	print '堆排序方法如下：'
+	tmp = list(arr)
+	n = len(tmp)
+	build_heap(tmp, n)
+	for i in range(n)[::-1]:
+		tmp[0],tmp[i] = tmp[i],tmp[0]
+		adjust_heap(tmp, 0, i)
+		print i,tmp
+	return tmp
 
 
 if __name__ == '__main__':
@@ -87,4 +121,5 @@ if __name__ == '__main__':
 	print Select_sort(arr)
 	print Shell_sort(arr)
 	print Select_two_sort(arr)
+	print Heap_sort(arr)
 
