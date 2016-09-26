@@ -68,19 +68,6 @@ def Select_two_sort(arr):
 			tmp[n-i-1],tmp[max_t] = tmp[max_t],tmp[n-i-1]
 	return tmp
 
-def Bubble_sort(arr):
-#基本思路：在要排序的一组数中，对当前还未排好序的范围内的全部数，自上而下对相邻的两个数依次进行比较和调整，
-#让较大的数往下沉，较小的往上冒。即：每当两相邻的数比较后发现它们的排序与排序要求相反时，就将它们互换。
-	print '冒泡排序方法如下：'
-	tmp = list(arr)
-	n = len(tmp)
-	for i in range(n):
-		print i,tmp
-		for j in range(n-i-1):
-			if tmp[j+1]<tmp[j]:
-				tmp[j+1],tmp[j] = tmp[j],tmp[j+1]
-	return tmp
-
 def adjust_heap(arr, i, length):
 	tmp = arr[i]
 	child = 2*i+1
@@ -99,7 +86,6 @@ def build_heap(arr, length):
 	for i in range(0,length/2)[::-1]:
 		adjust_heap(arr,i,length)
 
-
 def Heap_sort(arr):
 #基本思路：一种树形选择排序，是对直接选择排序的有效改进。利用堆这种数据结构所设计的一种排序算法。堆积是一个近似
 #完全二叉树的结构，并同时满足堆积的性质：即子结点的键值或索引总是小于（或者大于）它的父节点。
@@ -113,13 +99,117 @@ def Heap_sort(arr):
 		print i,tmp
 	return tmp
 
+def Bubble_sort(arr):
+#基本思路：在要排序的一组数中，对当前还未排好序的范围内的全部数，自上而下对相邻的两个数依次进行比较和调整，
+#让较大的数往下沉，较小的往上冒。即：每当两相邻的数比较后发现它们的排序与排序要求相反时，就将它们互换。
+	print '冒泡排序方法如下：'
+	tmp = list(arr)
+	n = len(tmp)
+	for i in range(n):
+		print i,tmp
+		for j in range(n-i-1):
+			if tmp[j+1]<tmp[j]:
+				tmp[j+1],tmp[j] = tmp[j],tmp[j+1]
+	return tmp
+#对冒泡排序常见的改进方法是加入一标志性变量exchange，用于标志某一趟排序过程中是否有数据交换，
+#如果进行某一趟排序时并没有进行数据交换，则说明数据已经按要求排列好，可立即结束排序，避免不必要的比较过程。
+def Bubble_pos_sort(arr):
+#基本思路：设置一标志性变量pos,用于记录每趟排序中最后一次进行交换的位置。
+#由于pos位置之后的记录均已交换到位,故在进行下一趟排序时只要扫描到pos位置即可。
+	print 'pos改进的冒泡排序方法如下：'
+	tmp = list(arr)
+	lat = len(tmp)-1
+	while lat>0:
+		pos = 0
+		print lat,tmp
+		for i in range(lat):
+			if tmp[i]>tmp[i+1]:
+				pos = i
+				tmp[i],tmp[i+1] = tmp[i+1],tmp[i]
+		lat = pos
+	return tmp
+
+def Bubble_two_sort(arr):
+#基本思路：传统冒泡排序中每一趟排序操作只能找到一个最大值或最小值,我们考虑利用在每趟排序中进行正向
+#和反向两遍冒泡的方法一次可以得到两个最终值(最大者和最小者) , 从而使排序趟数几乎减少了一半。
+	print 'two改进的冒泡排序方法如下：'
+	tmp = list(arr)
+	n = len(tmp)
+	low = 0; high = n-1
+	while low<high:
+		print low,tmp
+		for i in range(1,high)[::-1]:
+			if tmp[i-1]>tmp[i]:
+				tmp[i-1],tmp[i] = tmp[i],tmp[i-1]
+		for i in range(high):
+			if tmp[i]>tmp[i+1]:
+				tmp[i],tmp[i+1] = tmp[i+1],tmp[i]
+		low += 1; high -= 1
+	return tmp
+
+def Quick_sort(arr, low, high):
+#基本思路：1）选择一个基准元素,通常选择第一个元素或者最后一个元素,
+#2）通过一趟排序讲待排序的记录分割成独立的两部分，其中一部分记录的元素值均比基准元素值小。另一部分记录的 元素值比基准值大。
+#3）此时基准元素在其排好序后的正确位置
+#4）然后分别对这两部分记录用同样的方法继续进行排序，直到整个序列有序。
+	if low >= high:
+		return arr
+	left = low
+	right = high
+	pivotkey = arr[high]
+	while low < high:
+		print low,high,arr
+		while low<high and arr[low]<=pivotkey: 
+			low += 1
+		arr[high] = arr[low]
+		while low<high and arr[high]>=pivotkey: 
+			high -= 1
+		arr[low] = arr[high]
+	arr[high] = pivotkey
+	Quick_sort(arr, left, low-1)
+	Quick_sort(arr, low+1, right)
+	return arr
+
+def merge(left, right):
+	i, j = 0, 0
+	result = []
+	while i<len(left) and j<len(right):
+		if left[i]<=right[j]:
+			result.append(left[i])
+			i += 1
+		else:
+			result.append(right[j])
+			j += 1
+	result += left[i:]
+	result += right[j:]
+	print result
+	return result
+
+def Merge_sort(arr):
+#基本思路：归并（Merge）排序法是将两个（或两个以上）有序表合并成一个新的有序表，
+#即把待排序序列分为若干个子序列，每个子序列是有序的。然后再把有序子序列合并为整体有序序列。
+	if len(arr)<=1:
+		return arr
+	num = len(arr)/2
+	left = Merge_sort(arr[:num])
+	right = Merge_sort(arr[num:])
+	return merge(left, right)
+
 
 if __name__ == '__main__':
 	arr = [10,23,1,321,5,34,10,11,2,43]
 	print Insert_sort(arr)
-	print Bubble_sort(arr)
-	print Select_sort(arr)
 	print Shell_sort(arr)
+	print Select_sort(arr)
 	print Select_two_sort(arr)
 	print Heap_sort(arr)
+	print Bubble_sort(arr)
+	print Bubble_pos_sort(arr)
+	print Bubble_two_sort(arr)
+	print '快速排序方法如下：'
+	print Quick_sort(arr,0,len(arr)-1)
+	arr = [10,23,1,321,5,34,10,11,2,43]
+	print '归并排序方法如下：'
+	print Merge_sort(arr)
+
 
