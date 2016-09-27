@@ -195,6 +195,26 @@ def Merge_sort(arr):
 	right = Merge_sort(arr[num:])
 	return merge(left, right)
 
+import math
+def Radix_sort(arr, radix=10):
+#基本思路：基数排序（radix sort）属于“分配式排序”（distribution sort），又称“桶子法”（bucket sort）或bin sort，
+#顾名思义，它是透过键值的部份资讯，将要排序的元素分配至某些“桶”中，藉以达到排序的作用，基数排序法是属于稳定性的排序，
+#其时间复杂度为O (nlog(r)m)，其中r为所采取的基数，而m为堆数，在某些时候，基数排序法的效率高于其它的稳定性排序法。
+	print '基数排序方法如下：'
+	tmp = list(arr)
+	k = int(math.ceil(math.log(max(tmp), radix)))
+	bucket = [[] for i in range(radix)]
+	for j in tmp:
+		for i in range(1,k+1):
+			if radix**(i-1)<=j<(radix**i):
+				bucket[i-1].append(j)
+				break
+	del tmp[:]
+	for z in bucket:
+		tmp += Merge_sort(z)
+	del z[:]
+	return tmp
+
 
 if __name__ == '__main__':
 	arr = [10,23,1,321,5,34,10,11,2,43]
@@ -211,5 +231,6 @@ if __name__ == '__main__':
 	arr = [10,23,1,321,5,34,10,11,2,43]
 	print '归并排序方法如下：'
 	print Merge_sort(arr)
+	print Radix_sort(arr)
 
 
