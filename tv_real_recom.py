@@ -9,11 +9,11 @@ import MySQLdb
 import numpy as np 
 
 start = time.time()
-tf = {}
+tf = {} #{id:[{},{},..],...}
 idf_bre = {}
 idf_aft = {}
 tv_data = []  #新电视剧的变量数据
-score_mat = {}
+score_mat = {} #电视剧得分矩阵{id:[{},{}...],...}
 tags = {} #标签库
 weight = [5,2,1,1,1,1]
 rules = u'，|；|。|、|（|）|/|\[|\]| |\(|\)|\*|\+|,|-|\.|:|;|\||<|=|>'
@@ -31,6 +31,7 @@ for i in range(len(tmp)):
 	arr = tmp[i]
 	idf_bre[arr[1]] = arr[2]
 
+
 sql2 = 'select * from ad_tv_recom_var_stat'
 cursor.execute(sql2)
 tmp = cursor.fetchall()
@@ -42,7 +43,15 @@ cursor.execute(sql3)
 tmp = cursor.fetchall()
 for i in range(len(tmp)):
 	k = int(tmp[i][0])
-	score_mat[k] = [eval(j) for j in tmp[i][1:]]
+	score_mat.setdefault(k,[])
+	for j in tmp[i][1:]:
+		obj = {}
+		if len(j):
+			for ss in j.split(','):
+				tmp_arr = ss.split(':')
+				obj[int(tmp_arr[0])] = tmp_arr[1] 
+ 		score_mat[k].append(obj)
+
 
 sql4 = 'select tag from ad_type_lib1'
 cursor.execute(sql4)
@@ -66,12 +75,13 @@ def find_tag(sentence): #sentence为电视剧的描述信息
 	return ','.join(res.keys())
 
 for i in range(len(tv_data)):
-	tv_sum += 0 #tv_sum += 1  #所有电视剧的数量
 	tv_data[i] = list(tv_data[i])
 	key = tv_data[i][0]
 	arr = tv_data[i][1:]
 	tmp = []  #每个电视剧的所有关键词
 	dim_tmp = [] #每个电视剧的每个维度的关键词统计[[{},{}..],..]
+	if key not in score_mat:
+		tv_sum += 1 #所有电视剧的数量
 	if not arr[1]: 
 		arr[1] = ''
 		tv_data[i][2] = ''
@@ -105,10 +115,12 @@ for i in range(len(tv_data)):
 		if not idf_bre.has_key(ww):
 			idf_bre[ww] = 1
 		else:
-			idf_bre[ww] += 0  #idf_bre[ww] += 1
+			if key not in score_mat:
+				idf_bre[ww] += 1 
 
 for key in idf_bre:
 	idf_aft[key] = math.log10(tv_sum/idf_bre[key])
+
 
 #对历史电视剧的得分矩阵重新计算
 for key in score_mat:
@@ -120,6 +132,7 @@ for key in score_mat:
 		tt[mat.keys()] = mat.values()
 		tmp.extend(list(tt))
 	score_mat[key] = np.array(tmp)
+
 
 #计算电视剧矩阵得分
 def tv_score(weight, tf, idf):
@@ -156,49 +169,67 @@ def tv_sim(tv_id,data): #tv_id:要计算的电视剧(1,2,3...)，data:电视剧�
 	return dict(enumerate(sorted(res,key=lambda x:x[1],reverse=True)[0:100]))
 
 dat = tv_score(weight,tf,idf_aft)
-score_mat = dict(score_mat,**dat) #将新剧和老剧的得分合并
+score_mat_new = dict(score_mat,**dat) #将新剧和老剧的得分合并
 
 
 #将结果和中间数据保存到数据库中
 for key in dat:
-	res = tv_sim(key, score_mat)
+	res = tv_sim(key, score_mat_new)
 	sim_arr = [i[0] for i in res.values()]
-	sql = 'insert into ad_tv_cos values ("%d","%s","%s","%s")' %(key,str(res),str(sim_arr),'')
-	cursor.execute(sql)
-	db.commit()
-print 1
+	if key not in score_mat:
+		sql = 'insert into ad_tv_cos values ("%d","%s","%s","%s")' %(key,str(res),str(sim_arr),tv_data[2])
+		cursor.execute(sql)
+		db.commit()
+
 
 for i in range(len(tv_data)):
 	tv_id = tv_data[i][0]
 	sql = 'update ad_tv_lib set is_old=%d where id=%d' %(1,int(tv_id))
 	cursor.execute(sql)
 	db.commit()
-print 2
+
+vv = []
+for key,tv_arr in tf.items():
+	tmp = []
+	tmp.append(int(key))
+	for tv_obj in tv_arr:
+		ss = ';'.join([k.encode('utf-8')+':'+str(v) for k,v in tv_obj.items()])
+		tmp.append(ss)
+	if key not in score_mat:
+		vv.append(tuple(tmp))
+sql = 'insert into ad_tv_recom_tf values(%s,%s,%s,%s,%s,%s,%s)'
+cursor.executemany(sql,vv)
+db.commit()
 
 delete = 'delete from ad_tv_recom_idf'
 cursor.execute(delete)
 db.commit()
-n = 1
-for k,v in idf_bre.items():
-	sql = 'insert into ad_tv_recom_idf values ("%d","%s","%d","%d")' %(n,k,int(v),int(tv_sum))
-	cursor.execute(sql)
-	db.commit()
-	n += 1
-print 3
-'''
+
+tmp_ll = list(idf_bre.items())
+vv = [(i+1,tmp_ll[i][0],tmp_ll[i][1],tv_sum) for i in range(len(tmp_ll))]
+sql = 'insert into ad_tv_recom_idf values(%s,%s,%s,%s)'
+cursor.executemany(sql,vv)
+db.commit()
+
+
 delete = 'delete from ad_tv_recom_score_matrix'
 cursor.execute(delete)
 db.commit()
-'''
-for tv_id,np_arr in score_mat.items():
+vv = []
+for tv_id,np_arr in score_mat_new.items():
 	nn = 0
 	res = []
+	res.append(tv_id)
 	for arr in var_stat:
 		tmp = np_arr[nn:(nn+len(arr))]
 		nn +=  len(arr)
-		res.append(str(dict(zip(np.nonzero(tmp)[0],tmp[np.nonzero(tmp)[0]]))))
-	sql = 'insert into ad_tv_recom_score_matrix values ("%d","%s","%s","%s","%s","%s","%s")' %(tv_id,res[0],res[1],res[2],res[3],res[4],res[5])
-	cursor.execute(delete)
-	db.commit()
-print 4
+		ss = ','.join([str(i)+':'+str(tmp[i]) for i in np.nonzero(tmp)[0]])
+		res.append(ss)
+	vv.append(tuple(res))
+sql = 'insert into ad_tv_recom_score_matrix values (%s,%s,%s,%s,%s,%s,%s)'
+cursor.executemany(sql,vv)
+db.commit()
+
+cursor.close()
+db.close()
 
